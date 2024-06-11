@@ -1,103 +1,82 @@
 'use strict';
 
-// Блок чтения данных их DOM и объявления переменных
-
-let title;
-let screens;
-let screenPrice;
-let adaptive;
-let serviceNames = ['Названия дополнительных платных услуг'];
-let exampleServiceNames = ['Примеры названий дополнительных платных услуг', 'Например: Тщательно протестировать', 'Например: Показать фокус-группе'];
-let exampleServicePrices = ['Примеры стоимости дополнительных платных услуг', '10000 руб', '5000 руб'];
-
-let allServicePrices; // сумму всех дополнительных услуг
-let fullPrice = 100500; // итоговая стоимость
-let rollback = 23; // процент отката
-let servicePercentPrice; // итоговая стоимость минус сумма отката
-
-// Блок описания функций
-
-const isNumber = function (num) {
-    return !isNaN(parseFloat(num)) && isFinite(num);
-};
-
-const getTitle = function () {
-    title = prompt('Как называется ваш проект?', ' КаЛьКулятор Вёрстки           ');
-    document.title = title.trim()[0].toUpperCase() + title.trim().substring(1).toLowerCase();
+const appData = {
+    title: '',
+    screens: '',
+    screenPrice: 0,
+    adaptive: true,
+    serviceNames: ['Названия дополнительных платных услуг', 'Например: Тщательно протестировать', 'Например: Показать фокус-группе'],
+    exampleServiceNames: ['Примеры названий дополнительных платных услуг', 'Например: Тщательно протестировать', 'Например: Показать фокус-группе'],
+    exampleServicePrices: ['Примеры стоимости дополнительных платных услуг', '10000 руб', '5000 руб'],
+    allServicePrices: 0, // сумму всех дополнительных услуг
+    fullPrice: 100500, // итоговая стоимость
+    rollback: 23, // процент отката
+    servicePercentPrice: 0, // итоговая стоимость минус сумма отката
+    isNumber: function (num) {
+        return !(parseFloat(num) === 'number') && isFinite(num);
+    },
+    pricePrompt: function (request, example = 0) {
+        let answer = 0;
+        do {
+            answer = Math.abs(parseFloat(prompt(request, example)));
+        } while (!appData.isNumber(answer));
+        return answer;
+    },
+    getTitle: function () {
+        appData.title = prompt('Как называется ваш проект?', ' КаЛьКулятор Вёрстки           ');
+        appData.title = appData.title.trim();
+        document.title = appData.title[0].toUpperCase() + appData.title.substring(1).toLowerCase();
+    },
+    asking: function () {
+        appData.getTitle();
+        appData.screens = prompt('Какие типы экранов нужно разработать?', 'Простые, Сложные, Интерактивные');
+        appData.screenPrice = appData.pricePrompt('Сколько будет стоить данная работа?', 12000 + ' руб');
+        appData.adaptive = confirm('Нужен ли делать сайт адаптивным?');
+    },
+    getAllServicePrices: function () {
+        let sum = 0;
+        for (let i = 1; i < 3; i++) {
+            appData.serviceNames[i] = prompt('Какой дополнительный тип услуги нужен?\nВведите название услуги:', appData.serviceNames[i]);
+            sum += appData.pricePrompt('Сколько это будет стоить?', appData.exampleServicePrices[i]);
+        };
+        return sum;
+    },
+    getServicePercentPrice: function () {
+        return appData.fullPrice - (appData.fullPrice * (appData.rollback / 100));
+    },
+    getFullPrice: function () {
+        return Math.abs(appData.screenPrice) + appData.allServicePrices;
+    },
+    discountMessage: function (total, d5 = 15000, d10 = 30000) {
+        switch (true) {
+            case total >= d10:
+                return 'Даём скидку в 10%';
+            case total >= d5:
+                return 'Даём скидку в 5%';
+            case total >= 0:
+                return 'Скидка не предусмотрена';
+            default:
+                return '! Функция определения скидки получила отрицательное число !';
+        }
+    },
+    getServicePercentPrices: function () {
+        return Math.ceil(appData.fullPrice - (appData.fullPrice * (appData.rollback / 100)));
+    },
+    logger: function () {
+        console.log(appData.fullPrice);
+        console.log(appData.servicePercentPrice);
+        // при значениях стоимостей работ по умолчанию (из примеров) получаем 20790 и скидку 5%.
+        for (let key in appData) {
+            console.log(appData[key]);
+        };
+    },
+    start: function () {
+        appData.asking(); // обрабатывает title и выводим его в заголовок окна
+        appData.allServicePrices = appData.getAllServicePrices();
+        appData.fullPrice = appData.getFullPrice();
+        appData.discountMessage();
+        appData.servicePercentPrice = appData.getServicePercentPrices();
+        appData.logger();
+    },
 }
-
-const asking = function () {
-    getTitle();
-    screens = prompt('Какие типы экранов нужно разработать?', 'Простые, Сложные, Интерактивные');
-    screenPrice = pricePrompt('Сколько будет стоить данная работа?', 12000 + ' руб');
-    adaptive = confirm('Нужен ли делать сайт адаптивным?');
-};
-
-const pricePrompt = function (request, example = 0) {
-    let answer = 0;
-    do {
-        answer = Math.abs(parseFloat(prompt(request, example)));
-    } while (!isNumber(answer));
-    return answer;
-};
-
-const getAllServicePrices = function () {
-    let sum = 0;
-    for (let i = 1; i < 3; i++) {
-        serviceNames[i] = prompt('Какой дополнительный тип услуги нужен?\nВведите название услуги:', serviceNames[i]);
-        sum += pricePrompt('Сколько это будет стоить?', exampleServicePrices[i]);
-    };
-    return sum;
-};
-
-const showTypeOf = function (variable) {
-    console.log(variable, ' имеет тип данных =', typeof variable);
-}
-
-const discountMessage = function (total, d5 = 15000, d10 = 30000) {
-    switch (true) {
-        case total >= d10:
-            return 'Даём скидку в 10%';
-        case total >= d5:
-            return 'Даём скидку в 5%';
-        case total >= 0:
-            return 'Скидка не предусмотрена';
-        default:
-            return '! Функция определения скидки получила отрицательное число !';
-    }
-};
-
-const getServicePercentPrice = function () {
-    return fullPrice - (fullPrice * (rollback / 100));
-};
-
-const getFullPrice = function () {
-    return Math.abs(screenPrice) + allServicePrices;
-}
-
-const getServicePercentPrices = function () {
-    return Math.ceil(fullPrice - (fullPrice * (rollback / 100)));
-}
-
-// Функциональный блок
-
-asking(); // обрабатывает title и выводим его в заголовок окна
-showTypeOf(title);
-showTypeOf(fullPrice);
-showTypeOf(adaptive);
-console.log(screens.length);
-screens.toLowerCase().split(', ');
-// console.log('Стоимость вёрстки экранов ', String(screenPrice), ' рублей/долларов/гривен/юани');
-// console.log('Стоимость разработки сайта ', String(fullPrice), ' рублей/долларов/гривен/юани');
-// console.log('Процент отката посреднику за работу ', String(fullPrice * (rollback / 100)), ' рублей/долларов/гривен/юани');
-// console.log(servicePrice1, ' и ', servicePrice2);
-allServicePrices = getAllServicePrices();
-fullPrice = getFullPrice();
-servicePercentPrice = getServicePercentPrices();
-console.log('servicePercentPrice = ' + servicePercentPrice + ' рублей.');
-console.log(discountMessage(fullPrice, 15000, 30000));
-// при значениях стоимостей работ по умолчанию (из примеров) получаем 20790 и скидку 5%.
-
-// Мусорный блок
-
-// console.log('Script.js finished.');
+appData.start();
