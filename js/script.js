@@ -1,5 +1,25 @@
 'use strict';
 
+const pageTitle = document.getElementsByTagName('h1')[0].textContent;
+// console.log(pageTitle);
+const bottomButtons = document.getElementsByClassName('handler_btn');
+// console.log(bottomButtons);
+const bottomPlus = document.querySelector('.screen-btn');
+// console.log(bottomPlus);
+const otherItemsPercent = document.querySelectorAll('.other-items.percent');
+// console.log(otherItemsPercent);
+const otherItemsNumber = document.querySelectorAll('.other-items.number');
+// console.log(otherItemsNumber);
+const inputRange = document.querySelector('.rollback').querySelector('input');
+// console.log(inputRange);
+const spanRangeValue = document.querySelector('.rollback').querySelector('.range-value');
+// console.log(spanRangeValue);
+const allTotalInputs = Array.from(document.getElementsByClassName('total-input'));
+// console.log(allTotalInputs[0]);
+let screenBlocks = document.querySelectorAll('screen');
+// console.log(screenBlocks);
+// alert('стоп');
+
 const appData = {
     title: '',
     screen: [],
