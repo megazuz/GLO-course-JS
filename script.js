@@ -2,81 +2,113 @@
 
 const appData = {
     title: '',
-    screens: '',
-    screenPrice: 0,
-    adaptive: true,
-    serviceNames: ['Названия дополнительных платных услуг', 'Например: Тщательно протестировать', 'Например: Показать фокус-группе'],
-    exampleServiceNames: ['Примеры названий дополнительных платных услуг', 'Например: Тщательно протестировать', 'Например: Показать фокус-группе'],
-    exampleServicePrices: ['Примеры стоимости дополнительных платных услуг', '10000 руб', '5000 руб'],
-    allServicePrices: 0, // сумму всех дополнительных услуг
-    fullPrice: 100500, // итоговая стоимость
+    screen: [],
+    exampleScreen: [  // Примеры типов экранов и их стоимость
+        { name: 'Простые', price: 4000 },
+        { name: 'Сложные', price: 8000 },
+        { name: 'Интерактивные', price: 12000 }
+    ],
+    adaptivePrice: 0, // Стоимость реализации адаптивной вёрстки
+    exampleAdaptivePrice: 0,  // установленная стоимость адаптивной вёрстки
+    service: [],
+    exampleService: [ // Примеры названия дополнительный сервисов/платных услуг
+        { name: 'Метрика', price: 1000 },
+        { name: 'Отправка форм', price: 2000 }
+    ],
+    allScreenPrice: 0, // сумму всех экранов
+    allServicePrice: 0, // сумму всех дополнительных сервисов/платных услуг
+    fullPrice: 0, // итоговая стоимость
     rollback: 23, // процент отката
-    servicePercentPrice: 0, // итоговая стоимость минус сумма отката
-    isNumber: function (num) {
+    finalProfit: 0, // итоговый заработок
+    start: function () {
+        appData.asking();
+        appData.getFullPrice();
+        console.log(appData.discountMessage());
+        appData.getFinalProfit();
+        appData.logger();
+    },
+    asking: function () { // единый блок сбора начальных данных
+        appData.getTitle();
+        appData.getScreens();
+        appData.getAdaptive();
+        appData.getServices();
+    },
+    isNumber: function (num) { // проверяет ответ на возможность перевести в число
         return !(parseFloat(num) === 'number') && isFinite(num);
     },
-    pricePrompt: function (request, example = 0) {
-        let answer = 0;
+    isDesignation: function (text) {  // проверяет ответ на наличие букв в строке
+        return !(parseFloat(text)) && (text.trim() != '');
+    },
+    pricePrompt: function (request, example = '') { // запрашивает стоимость
+        let answer = '';
         do {
             answer = Math.abs(parseFloat(prompt(request, example)));
         } while (!appData.isNumber(answer));
         return answer;
     },
-    getTitle: function () {
-        appData.title = prompt('Как называется ваш проект?', ' КаЛьКулятор Вёрстки           ');
-        appData.title = appData.title.trim();
+    titlePrompt: function (request, example = '') { // запрашивает название проекта
+        let answer = '';
+        do {
+            answer = prompt(request, example).trim();
+        } while (!appData.isDesignation(answer));
+        return answer;
+    },
+    getTitle: function () {  // обрабатывает title и выводим его в заголовок окна
+        appData.title = appData.titlePrompt('Как называется ваш проект?', ' КаЛьКулятор Вёрстки 2.0          ');
         document.title = appData.title[0].toUpperCase() + appData.title.substring(1).toLowerCase();
     },
-    asking: function () {
-        appData.getTitle();
-        appData.screens = prompt('Какие типы экранов нужно разработать?', 'Простые, Сложные, Интерактивные');
-        appData.screenPrice = appData.pricePrompt('Сколько будет стоить данная работа?', 12000 + ' руб');
-        appData.adaptive = confirm('Нужен ли делать сайт адаптивным?');
-    },
-    getAllServicePrices: function () {
-        let sum = 0;
-        for (let i = 1; i < 3; i++) {
-            appData.serviceNames[i] = prompt('Какой дополнительный тип услуги нужен?\nВведите название услуги:', appData.serviceNames[i]);
-            sum += appData.pricePrompt('Сколько это будет стоить?', appData.exampleServicePrices[i]);
+    getAdaptive: function () {
+        if (confirm('Нужен ли делать сайт адаптивным?')) {
+            appData.adaptivePrice = appData.exampleAdaptivePrice; // назначает стоимость реализации адаптивного сайта
         };
-        return sum;
     },
-    getServicePercentPrice: function () {
-        return appData.fullPrice - (appData.fullPrice * (appData.rollback / 100));
+    getScreens: function () {  // запрашивает набор однотипных услуг вида Название и Стоимость
+        let name = '';
+        let price = '';
+        for (let id = 0; id < 3; id++) {
+            name = appData.titlePrompt('Какой тип экрана нужно разработать?\nВводите название типа экрана:', appData.exampleScreen[id].name);
+            price = appData.pricePrompt('Сколько это будет стоить?', appData.exampleScreen[id].price);
+            appData.screen.push({ id, name, price });
+        }
+        appData.allScreenPrice += appData.screen.reduce(function (sum, item) {
+            return sum + item.price;
+        }, 0);
     },
-    getFullPrice: function () {
-        return Math.abs(appData.screenPrice) + appData.allServicePrices;
+    getServices: function () { // суммирует стоимость всех доп. услуг
+        let name = '';
+        let price = '';
+        for (let id = 0; id < 2; id++) {
+            name = appData.titlePrompt('Введите название дополнительной платной услуги/функционала', appData.exampleService[id].name);
+            price = appData.pricePrompt('Сколько это будет стоить?', appData.exampleService[id].price);
+            appData.service.push({ id, name, price });
+            appData.allServicePrice += price;
+        };
     },
-    discountMessage: function (total, d5 = 15000, d10 = 30000) {
+    getFullPrice: function () { // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
+        appData.fullPrice = appData.allScreenPrice + appData.adaptivePrice + appData.allServicePrice;
+    },
+    discountMessage: function () { // возвращает строчку с величиной скидки (от общей цены)
         switch (true) {
-            case total >= d10:
+            case appData.fullPrice >= 30000:
                 return 'Даём скидку в 10%';
-            case total >= d5:
+            case appData.fullPrice >= 15000:
                 return 'Даём скидку в 5%';
-            case total >= 0:
+            case appData.fullPrice >= 0:
                 return 'Скидка не предусмотрена';
             default:
                 return '! Функция определения скидки получила отрицательное число !';
         }
     },
-    getServicePercentPrices: function () {
-        return Math.ceil(appData.fullPrice - (appData.fullPrice * (appData.rollback / 100)));
+    getFinalProfit: function () { // итоговый доход после вычета отката
+        appData.finalProfit = Math.ceil(appData.fullPrice - (appData.fullPrice * (appData.rollback / 100)));
     },
     logger: function () {
         console.log(appData.fullPrice);
-        console.log(appData.servicePercentPrice);
+        console.log(appData.finalProfit);
         // при значениях стоимостей работ по умолчанию (из примеров) получаем 20790 и скидку 5%.
-        for (let key in appData) {
-            console.log(appData[key]);
-        };
-    },
-    start: function () {
-        appData.asking(); // обрабатывает title и выводим его в заголовок окна
-        appData.allServicePrices = appData.getAllServicePrices();
-        appData.fullPrice = appData.getFullPrice();
-        appData.discountMessage();
-        appData.servicePercentPrice = appData.getServicePercentPrices();
-        appData.logger();
+        // for (let key in appData) {
+        //     console.log(appData[key]);
+        // };
     },
 }
 appData.start();
