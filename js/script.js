@@ -28,18 +28,19 @@ const appData = {
     totalServicePercent: 0, // сумма всех дополнительных сервисов, цена которых выражается в процентах от общей стоимости
     totalServiceNumber: 0, //  сумма всех дополнительных сервисов с фиксированной ценой
     fullPrice: 0, // итоговая стоимость работ ( = сумме всех экранов + учёт процентных сервисов + сервисы с фиксированной ценой)
-    rollback: 23, // процент отката заказчику
+    rollback: 0, // процент отката заказчику
     finalProfit: 0, // итоговый заработок ( = итоговая стоимость работ - откат)
 
+    toNumber: function (str) {
+        return Math.abs(parseFloat(str.trim().split(/\D/).join('')));
+    },
     updateStatus: function (element) {
         if (appData.screenSelect && appData.screenInput) {
             element.disabled = false;
             element.classList.remove('disabled');
-            console.log('button enabled');
         } else {
             element.disabled = true;
             element.classList.add('disabled');
-            console.log('button disabled');
         }
     },
     isSelected: function () {
@@ -50,7 +51,6 @@ const appData = {
             }
         });
         appData.screenSelect = temp;
-        console.log('screenSelect =', appData.screenSelect);
         appData.updateStatus(buttonStart);
     },
     isFilled: function () {
@@ -61,7 +61,6 @@ const appData = {
             }
         });
         appData.screenInput = temp;
-        console.log('screenInput =', appData.screenInput);
         appData.updateStatus(buttonStart);
     },
     addListenersToForms: function () {
@@ -82,8 +81,8 @@ const appData = {
         appData.updateStatus(buttonStart);
         appData.addTitle();
         inputRange.addEventListener('input', function (event) {
-            spanRangeValue.textContent = event.target.value + '%';
             appData.rollback = event.target.value;
+            spanRangeValue.textContent = event.target.value + '%';
         });
         appData.addListenersToForms();
         buttonPlus.addEventListener('click', appData.addScreenBlock);
@@ -113,14 +112,15 @@ const appData = {
     },
     addScreens: function () {
         screenBlocks = document.querySelectorAll('.screen');
+        appData.screenArray.length = 0;
         screenBlocks.forEach(function (item, index) {
             const select = item.querySelector('select');
             const count = item.querySelector('input');
             appData.screenArray.push({
                 id: index,
                 name: select.options[select.selectedIndex].textContent,
-                count: +count.value,
-                price: +select.value * +count.value,
+                count: appData.toNumber(count.value),
+                price: appData.toNumber(select.value) * appData.toNumber(count.value),
             });
         });
     },
@@ -130,7 +130,7 @@ const appData = {
             const label = item.querySelector('label');
             const input = item.querySelector('input[type=text]');
             if (check.checked) {
-                appData.servicePercentArray[label.textContent] = +input.value;
+                appData.servicePercentArray[label.textContent] = appData.toNumber(input.value);
             }
         });
         otherItemsNumber.forEach(function (item) {
@@ -138,7 +138,7 @@ const appData = {
             const label = item.querySelector('label');
             const input = item.querySelector('input[type=text]');
             if (check.checked) {
-                appData.serviceNumberArray[label.textContent] = +input.value;
+                appData.serviceNumberArray[label.textContent] = appData.toNumber(input.value);
             }
         });
     },
@@ -147,8 +147,8 @@ const appData = {
         let tempScreen = 0;
         let tempCount = 0;
         for (let key in appData.screenArray) {
-            tempScreen += +appData.screenArray[key].price;
-            tempCount += +appData.screenArray[key].count;
+            tempScreen += appData.screenArray[key].price;
+            tempCount += appData.screenArray[key].count;
         }
         appData.totalScreen = tempScreen;
         appData.screenCount = tempCount;
@@ -157,11 +157,9 @@ const appData = {
         // суммирует стоимость всех доп. услуг
         let tempPercent = 0;
         for (let key in appData.servicePercentArray) {
-            tempPercent += +appData.servicePercentArray[key];
+            tempPercent += appData.servicePercentArray[key];
         }
-        appData.totalServicePercent = Math.round(
-            appData.totalScreen * (tempPercent / 100),
-        );
+        appData.totalServicePercent = Math.round(appData.totalScreen * (tempPercent / 100));
         let tempNumber = 0;
         for (let key in appData.serviceNumberArray) {
             tempNumber += +appData.serviceNumberArray[key];
@@ -170,25 +168,26 @@ const appData = {
     },
     getFullPrice: function () {
         // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
-        appData.fullPrice =
-            appData.totalScreen +
-            appData.totalServicePercent +
-            appData.totalServiceNumber;
+        appData.fullPrice = appData.totalScreen + appData.totalServicePercent + appData.totalServiceNumber;
     },
     getFinalProfit: function () {
         // итоговый доход после вычета отката
-        appData.finalProfit = Math.ceil(
-            appData.fullPrice - appData.fullPrice * (appData.rollback / 100),
-        );
+        appData.finalProfit = Math.ceil(appData.fullPrice - appData.fullPrice * (appData.rollback / 100));
     },
     showResult: function () {
         showTotalScreen.value = appData.totalScreen; // Стоимость вёрстки
         showScreenCount.value = appData.screenCount; // Количество экранов
-        showTotalService.value =
-            appData.totalServicePercent + appData.totalServiceNumber; // Стоимость доп. услуг
+        showTotalService.value = appData.totalServicePercent + appData.totalServiceNumber; // Стоимость доп. услуг
         showFullPrice.value = appData.fullPrice; // Итоговая стоимость
         showFinalProfit.value = appData.finalProfit; // Стоимость с учётом отката
+        inputRange.addEventListener('input', function (event) {
+            appData.rollback = event.target.value;
+            spanRangeValue.textContent = event.target.value + '%';
+            appData.getFinalProfit();
+            showFinalProfit.value = appData.finalProfit;
+        });
     },
+
     logger: function () {
         console.log(appData);
     },
