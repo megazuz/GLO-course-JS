@@ -1,134 +1,196 @@
 'use strict';
 
-const pageTitle = document.getElementsByTagName('h1')[0].textContent;
-// console.log(pageTitle);
-const bottomButtons = document.getElementsByClassName('handler_btn');
-// console.log(bottomButtons);
-const bottomPlus = document.querySelector('.screen-btn');
-// console.log(bottomPlus);
-const otherItemsPercent = document.querySelectorAll('.other-items.percent');
-// console.log(otherItemsPercent);
-const otherItemsNumber = document.querySelectorAll('.other-items.number');
-// console.log(otherItemsNumber);
-const inputRange = document.querySelector('.rollback').querySelector('input');
-// console.log(inputRange);
-const spanRangeValue = document.querySelector('.rollback').querySelector('.range-value');
-// console.log(spanRangeValue);
-const allTotalInputs = Array.from(document.getElementsByClassName('total-input'));
-// console.log(allTotalInputs[0]);
-let screenBlocks = document.querySelectorAll('screen');
-// console.log(screenBlocks);
-// alert('стоп');
+const pageTitle = document.getElementsByTagName('h1')[0]; // заголовок страницы из первого h1 элемента
+const buttonPlus = document.querySelector('.screen-btn'); // кнопка "+"
+const buttonStart = document.getElementsByClassName('handler_btn')[0]; // Кнопка "Рассчитать"
+const buttonReset = document.getElementsByClassName('handler_btn')[1]; // Кнопка "Очистить форму"
+const otherItemsPercent = document.querySelectorAll('.other-items.percent'); // все формы с процентными сервисами
+const otherItemsNumber = document.querySelectorAll('.other-items.number'); // все формы с сервисами по фиксированной цене
+const inputRange = document.querySelector('.rollback input'); // ползунок от 0 до 100
+const spanRangeValue = document.querySelector('.range-value'); // подпись под ползунком
+const showTotalScreen = document.getElementsByClassName('total-input')[0]; // Стоимость вёрстки
+const showScreenCount = document.getElementsByClassName('total-input')[1]; // Количество экранов
+const showTotalService = document.getElementsByClassName('total-input')[2]; // Стоимость доп. услуг
+const showFullPrice = document.getElementsByClassName('total-input')[3]; // Итоговая стоимость
+const showFinalProfit = document.getElementsByClassName('total-input')[4]; // Стоимость с учётом отката
+let screenBlocks = document.querySelectorAll('.screen');
+let screenBlocksSelects = document.querySelectorAll('.screen select');
+let screenBlocksInputs = document.querySelectorAll('.screen input');
 
 const appData = {
-    title: '',
-    screen: [],
-    exampleScreen: [  // Примеры типов экранов и их стоимость
-        { name: 'Простые', price: 4000 },
-        { name: 'Сложные', price: 8000 },
-        { name: 'Интерактивные', price: 12000 }
-    ],
-    adaptivePrice: 0, // Стоимость реализации адаптивной вёрстки
-    exampleAdaptivePrice: 0,  // установленная стоимость адаптивной вёрстки
-    service: [],
-    exampleService: [ // Примеры названия дополнительный сервисов/платных услуг
-        { name: 'Метрика', price: 1000 },
-        { name: 'Отправка форм', price: 2000 }
-    ],
-    allScreenPrice: 0, // сумму всех экранов
-    allServicePrice: 0, // сумму всех дополнительных сервисов/платных услуг
-    fullPrice: 0, // итоговая стоимость
-    rollback: 23, // процент отката
-    finalProfit: 0, // итоговый заработок
+    screenSelect: false, // выбран тип экрана
+    screenInput: false, //заполнение поля ввода количества экрана данного типа
+    screenArray: [], // содержит тип экрана и общую стоимость экранов этого типа ( = цена экрана * количество экранов)
+    screenCount: 0, // Общее количество экранов в проекте
+    servicePercentArray: [], // хранит перечень сервисов, цена которых выражается в процентах от общей стоимости работ
+    serviceNumberArray: [], // хранит перечень сервисов, цена которых фиксированная
+    totalScreen: 0, // сумму всех экранов
+    totalServicePercent: 0, // сумма всех дополнительных сервисов, цена которых выражается в процентах от общей стоимости
+    totalServiceNumber: 0, //  сумма всех дополнительных сервисов с фиксированной ценой
+    fullPrice: 0, // итоговая стоимость работ ( = сумме всех экранов + учёт процентных сервисов + сервисы с фиксированной ценой)
+    rollback: 23, // процент отката заказчику
+    finalProfit: 0, // итоговый заработок ( = итоговая стоимость работ - откат)
+
+    updateStatus: function (element) {
+        if (appData.screenSelect && appData.screenInput) {
+            element.disabled = false;
+            element.classList.remove('disabled');
+            console.log('button enabled');
+        } else {
+            element.disabled = true;
+            element.classList.add('disabled');
+            console.log('button disabled');
+        }
+    },
+    isSelected: function () {
+        let temp = true;
+        screenBlocksSelects.forEach((item) => {
+            if (item.value === undefined) {
+                temp = false;
+            }
+        });
+        appData.screenSelect = temp;
+        console.log('screenSelect =', appData.screenSelect);
+        appData.updateStatus(buttonStart);
+    },
+    isFilled: function () {
+        let temp = true;
+        screenBlocksInputs.forEach((item) => {
+            if (item.value === undefined) {
+                temp = false;
+            }
+        });
+        appData.screenInput = temp;
+        console.log('screenInput =', appData.screenInput);
+        appData.updateStatus(buttonStart);
+    },
+    addListenersToForms: function () {
+        screenBlocksSelects = document.querySelectorAll('.screen select');
+        screenBlocksInputs = document.querySelectorAll('.screen input');
+        screenBlocksSelects.forEach((elem) => {
+            elem.addEventListener('change', () => {
+                appData.isSelected();
+            });
+        });
+        screenBlocksInputs.forEach((elem) => {
+            elem.addEventListener('change', () => {
+                appData.isFilled();
+            });
+        });
+    },
+    init: function () {
+        appData.updateStatus(buttonStart);
+        appData.addTitle();
+        inputRange.addEventListener('input', function (event) {
+            spanRangeValue.textContent = event.target.value + '%';
+            appData.rollback = event.target.value;
+        });
+        appData.addListenersToForms();
+        buttonPlus.addEventListener('click', appData.addScreenBlock);
+        buttonStart.addEventListener('click', appData.start);
+    },
+    addTitle: function () {
+        document.title = pageTitle.textContent;
+    },
+    addScreenBlock: function () {
+        const screenClone = screenBlocks[0].cloneNode(true);
+        screenBlocks[screenBlocks.length - 1].after(screenClone);
+        appData.screenSelect = false;
+        appData.screenInput = false;
+        appData.updateStatus(buttonStart);
+        screenBlocks = document.querySelectorAll('.screen');
+        appData.addListenersToForms();
+    },
     start: function () {
-        appData.asking();
+        appData.addScreens();
+        appData.addServices();
+        appData.getScreens();
+        appData.getServices();
         appData.getFullPrice();
-        console.log(appData.discountMessage());
         appData.getFinalProfit();
         appData.logger();
+        appData.showResult();
     },
-    asking: function () { // единый блок сбора начальных данных
-        appData.getTitle();
-        appData.getScreens();
-        appData.getAdaptive();
-        appData.getServices();
+    addScreens: function () {
+        screenBlocks = document.querySelectorAll('.screen');
+        screenBlocks.forEach(function (item, index) {
+            const select = item.querySelector('select');
+            const count = item.querySelector('input');
+            appData.screenArray.push({
+                id: index,
+                name: select.options[select.selectedIndex].textContent,
+                count: +count.value,
+                price: +select.value * +count.value,
+            });
+        });
     },
-    isNumber: function (num) { // проверяет ответ на возможность перевести в число
-        return !(parseFloat(num) === 'number') && isFinite(num);
+    addServices: function () {
+        otherItemsPercent.forEach(function (item) {
+            const check = item.querySelector('input[type=checkbox]');
+            const label = item.querySelector('label');
+            const input = item.querySelector('input[type=text]');
+            if (check.checked) {
+                appData.servicePercentArray[label.textContent] = +input.value;
+            }
+        });
+        otherItemsNumber.forEach(function (item) {
+            const check = item.querySelector('input[type=checkbox]');
+            const label = item.querySelector('label');
+            const input = item.querySelector('input[type=text]');
+            if (check.checked) {
+                appData.serviceNumberArray[label.textContent] = +input.value;
+            }
+        });
     },
-    isDesignation: function (text) {  // проверяет ответ на наличие букв в строке
-        return !(parseFloat(text)) && (text.trim() != '');
-    },
-    pricePrompt: function (request, example = '') { // запрашивает стоимость
-        let answer = '';
-        do {
-            answer = Math.abs(parseFloat(prompt(request, example)));
-        } while (!appData.isNumber(answer));
-        return answer;
-    },
-    titlePrompt: function (request, example = '') { // запрашивает название проекта
-        let answer = '';
-        do {
-            answer = prompt(request, example).trim();
-        } while (!appData.isDesignation(answer));
-        return answer;
-    },
-    getTitle: function () {  // обрабатывает title и выводим его в заголовок окна
-        appData.title = appData.titlePrompt('Как называется ваш проект?', ' КаЛьКулятор Вёрстки 2.0          ');
-        document.title = appData.title[0].toUpperCase() + appData.title.substring(1).toLowerCase();
-    },
-    getAdaptive: function () {
-        if (confirm('Нужен ли делать сайт адаптивным?')) {
-            appData.adaptivePrice = appData.exampleAdaptivePrice; // назначает стоимость реализации адаптивного сайта
-        };
-    },
-    getScreens: function () {  // запрашивает набор однотипных услуг вида Название и Стоимость
-        let name = '';
-        let price = '';
-        for (let id = 0; id < 3; id++) {
-            name = appData.titlePrompt('Какой тип экрана нужно разработать?\nВводите название типа экрана:', appData.exampleScreen[id].name);
-            price = appData.pricePrompt('Сколько это будет стоить?', appData.exampleScreen[id].price);
-            appData.screen.push({ id, name, price });
+    getScreens: function () {
+        // запрашивает набор однотипных услуг вида Название и Стоимость
+        let tempScreen = 0;
+        let tempCount = 0;
+        for (let key in appData.screenArray) {
+            tempScreen += +appData.screenArray[key].price;
+            tempCount += +appData.screenArray[key].count;
         }
-        appData.allScreenPrice += appData.screen.reduce(function (sum, item) {
-            return sum + item.price;
-        }, 0);
+        appData.totalScreen = tempScreen;
+        appData.screenCount = tempCount;
     },
-    getServices: function () { // суммирует стоимость всех доп. услуг
-        let name = '';
-        let price = '';
-        for (let id = 0; id < 2; id++) {
-            name = appData.titlePrompt('Введите название дополнительной платной услуги/функционала', appData.exampleService[id].name);
-            price = appData.pricePrompt('Сколько это будет стоить?', appData.exampleService[id].price);
-            appData.service.push({ id, name, price });
-            appData.allServicePrice += price;
-        };
-    },
-    getFullPrice: function () { // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
-        appData.fullPrice = appData.allScreenPrice + appData.adaptivePrice + appData.allServicePrice;
-    },
-    discountMessage: function () { // возвращает строчку с величиной скидки (от общей цены)
-        switch (true) {
-            case appData.fullPrice >= 30000:
-                return 'Даём скидку в 10%';
-            case appData.fullPrice >= 15000:
-                return 'Даём скидку в 5%';
-            case appData.fullPrice >= 0:
-                return 'Скидка не предусмотрена';
-            default:
-                return '! Функция определения скидки получила отрицательное число !';
+    getServices: function () {
+        // суммирует стоимость всех доп. услуг
+        let tempPercent = 0;
+        for (let key in appData.servicePercentArray) {
+            tempPercent += +appData.servicePercentArray[key];
         }
+        appData.totalServicePercent = Math.round(
+            appData.totalScreen * (tempPercent / 100),
+        );
+        let tempNumber = 0;
+        for (let key in appData.serviceNumberArray) {
+            tempNumber += +appData.serviceNumberArray[key];
+        }
+        appData.totalServiceNumber = tempNumber;
     },
-    getFinalProfit: function () { // итоговый доход после вычета отката
-        appData.finalProfit = Math.ceil(appData.fullPrice - (appData.fullPrice * (appData.rollback / 100)));
+    getFullPrice: function () {
+        // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
+        appData.fullPrice =
+            appData.totalScreen +
+            appData.totalServicePercent +
+            appData.totalServiceNumber;
+    },
+    getFinalProfit: function () {
+        // итоговый доход после вычета отката
+        appData.finalProfit = Math.ceil(
+            appData.fullPrice - appData.fullPrice * (appData.rollback / 100),
+        );
+    },
+    showResult: function () {
+        showTotalScreen.value = appData.totalScreen; // Стоимость вёрстки
+        showScreenCount.value = appData.screenCount; // Количество экранов
+        showTotalService.value =
+            appData.totalServicePercent + appData.totalServiceNumber; // Стоимость доп. услуг
+        showFullPrice.value = appData.fullPrice; // Итоговая стоимость
+        showFinalProfit.value = appData.finalProfit; // Стоимость с учётом отката
     },
     logger: function () {
-        console.log(appData.fullPrice);
-        console.log(appData.finalProfit);
-        // при значениях стоимостей работ по умолчанию (из примеров) получаем 20790 и скидку 5%.
-        // for (let key in appData) {
-        //     console.log(appData[key]);
-        // };
+        console.log(appData);
     },
-}
-appData.start();
+};
+appData.init();
