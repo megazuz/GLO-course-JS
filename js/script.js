@@ -31,9 +31,11 @@ const appData = {
     rollback: 0, // процент отката заказчику
     finalProfit: 0, // итоговый заработок ( = итоговая стоимость работ - откат)
 
-    toNumber: function (str) {
-        return Math.abs(parseFloat(str.trim().split(/\D/).join('')));
+    toInt: function (str) {
+        const result = Math.abs(parseInt(str.trim().split(/\D/).join('')))
+        return result;
     },
+
     updateStatus: function (element) {
         if (appData.screenSelect && appData.screenInput) {
             element.disabled = false;
@@ -56,7 +58,7 @@ const appData = {
     isFilled: function () {
         let temp = true;
         screenBlocksInputs.forEach((item) => {
-            if (item.value === undefined) {
+            if (appData.toInt(item.value)) {
                 temp = false;
             }
         });
@@ -72,7 +74,7 @@ const appData = {
             });
         });
         screenBlocksInputs.forEach((elem) => {
-            elem.addEventListener('change', () => {
+            elem.addEventListener('input', () => {
                 appData.isFilled();
             });
         });
@@ -93,6 +95,7 @@ const appData = {
     },
     addScreenBlock: function () {
         const screenClone = screenBlocks[0].cloneNode(true);
+        screenClone.querySelector('input').value = '';
         screenBlocks[screenBlocks.length - 1].after(screenClone);
         appData.screenSelect = false;
         appData.screenInput = false;
@@ -119,8 +122,8 @@ const appData = {
             appData.screenArray.push({
                 id: index,
                 name: select.options[select.selectedIndex].textContent,
-                count: appData.toNumber(count.value),
-                price: appData.toNumber(select.value) * appData.toNumber(count.value),
+                count: appData.toInt(count.value),
+                price: appData.toInt(select.value) * appData.toInt(count.value),
             });
         });
     },
@@ -130,7 +133,7 @@ const appData = {
             const label = item.querySelector('label');
             const input = item.querySelector('input[type=text]');
             if (check.checked) {
-                appData.servicePercentArray[label.textContent] = appData.toNumber(input.value);
+                appData.servicePercentArray[label.textContent] = appData.toInt(input.value);
             }
         });
         otherItemsNumber.forEach(function (item) {
@@ -138,7 +141,7 @@ const appData = {
             const label = item.querySelector('label');
             const input = item.querySelector('input[type=text]');
             if (check.checked) {
-                appData.serviceNumberArray[label.textContent] = appData.toNumber(input.value);
+                appData.serviceNumberArray[label.textContent] = appData.toInt(input.value);
             }
         });
     },
