@@ -31,10 +31,7 @@ const appData = {
     rollback: 0, // процент отката заказчику
     finalProfit: 0, // итоговый заработок ( = итоговая стоимость работ - откат)
 
-    toInt: function (str) {
-        const result = Math.abs(parseInt(str.trim().split(/\D/).join('')))
-        return result;
-    },
+    toInt: (str) => Math.abs(parseInt(str.trim().split(/\D/).join(''))),
 
     updateStatus: function (element) {
         if (appData.screenSelect && appData.screenInput) {
@@ -47,37 +44,21 @@ const appData = {
     },
     isSelected: function () {
         let temp = true;
-        screenBlocksSelects.forEach((item) => {
-            if (item.value === undefined) {
-                temp = false;
-            }
-        });
+        screenBlocksSelects.forEach((item) => (item.value === undefined) ? temp = false : {});
         appData.screenSelect = temp;
         appData.updateStatus(buttonStart);
     },
     isFilled: function () {
         let temp = true;
-        screenBlocksInputs.forEach((item) => {
-            if (appData.toInt(item.value)) {
-                temp = false;
-            }
-        });
+        screenBlocksInputs.forEach((item) => (!appData.toInt(item.value)) ? temp = false : {});
         appData.screenInput = temp;
         appData.updateStatus(buttonStart);
     },
     addListenersToForms: function () {
         screenBlocksSelects = document.querySelectorAll('.screen select');
         screenBlocksInputs = document.querySelectorAll('.screen input');
-        screenBlocksSelects.forEach((elem) => {
-            elem.addEventListener('change', () => {
-                appData.isSelected();
-            });
-        });
-        screenBlocksInputs.forEach((elem) => {
-            elem.addEventListener('input', () => {
-                appData.isFilled();
-            });
-        });
+        screenBlocksSelects.forEach((elem) => elem.addEventListener('change', () => appData.isSelected()));
+        screenBlocksInputs.forEach((elem) => elem.addEventListener('input', () => appData.isFilled()));
     },
     init: function () {
         appData.updateStatus(buttonStart);
@@ -90,9 +71,7 @@ const appData = {
         buttonPlus.addEventListener('click', appData.addScreenBlock);
         buttonStart.addEventListener('click', appData.start);
     },
-    addTitle: function () {
-        document.title = pageTitle.textContent;
-    },
+    addTitle: () => document.title = pageTitle.textContent,
     addScreenBlock: function () {
         const screenClone = screenBlocks[0].cloneNode(true);
         screenClone.querySelector('input').value = '';
@@ -140,13 +119,10 @@ const appData = {
             const check = item.querySelector('input[type=checkbox]');
             const label = item.querySelector('label');
             const input = item.querySelector('input[type=text]');
-            if (check.checked) {
-                appData.serviceNumberArray[label.textContent] = appData.toInt(input.value);
-            }
+            (check.checked) ? appData.serviceNumberArray[label.textContent] = appData.toInt(input.value) : {};
         });
     },
     getScreens: function () {
-        // запрашивает набор однотипных услуг вида Название и Стоимость
         let tempScreen = 0;
         let tempCount = 0;
         for (let key in appData.screenArray) {
@@ -155,28 +131,21 @@ const appData = {
         }
         appData.totalScreen = tempScreen;
         appData.screenCount = tempCount;
-    },
+    },   // запрашивает набор однотипных услуг вида Название и Стоимость
     getServices: function () {
-        // суммирует стоимость всех доп. услуг
         let tempPercent = 0;
-        for (let key in appData.servicePercentArray) {
-            tempPercent += appData.servicePercentArray[key];
-        }
+        for (let key in appData.servicePercentArray) tempPercent += appData.servicePercentArray[key];
         appData.totalServicePercent = Math.round(appData.totalScreen * (tempPercent / 100));
         let tempNumber = 0;
-        for (let key in appData.serviceNumberArray) {
-            tempNumber += +appData.serviceNumberArray[key];
-        }
+        for (let key in appData.serviceNumberArray) tempNumber += +appData.serviceNumberArray[key];
         appData.totalServiceNumber = tempNumber;
-    },
+    },  // суммирует стоимость всех доп. услуг
     getFullPrice: function () {
-        // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
         appData.fullPrice = appData.totalScreen + appData.totalServicePercent + appData.totalServiceNumber;
-    },
+    },   // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
     getFinalProfit: function () {
-        // итоговый доход после вычета отката
         appData.finalProfit = Math.ceil(appData.fullPrice - appData.fullPrice * (appData.rollback / 100));
-    },
+    },   // итоговый доход после вычета отката
     showResult: function () {
         showTotalScreen.value = appData.totalScreen; // Стоимость вёрстки
         showScreenCount.value = appData.screenCount; // Количество экранов
@@ -191,8 +160,6 @@ const appData = {
         });
     },
 
-    logger: function () {
-        console.log(appData);
-    },
+    logger: () => console.log(appData),
 };
 appData.init();
