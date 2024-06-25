@@ -13,9 +13,13 @@ const showScreenCount = document.getElementsByClassName('total-input')[1]; // К
 const showTotalService = document.getElementsByClassName('total-input')[2]; // Стоимость доп. услуг
 const showFullPrice = document.getElementsByClassName('total-input')[3]; // Итоговая стоимость
 const showFinalProfit = document.getElementsByClassName('total-input')[4]; // Стоимость с учётом отката
-const screenBlocks = document.getElementsByClassName('screen');
-let screenBlocksSelects = document.querySelectorAll('.screen select');
-let screenBlocksInputs = document.querySelectorAll('.screen input');
+const screenBlocks = document.getElementsByClassName('screen');  // находит все дивы, содержащие селект с выбором типа экрана и инпут с их количеством, для дальнейших манипуляций
+let screenBlocksSelects = document.querySelectorAll('.screen select');  // находит в этом блоке все селекты для обработки данных с них и навешивания на них "слушателя"
+let screenBlocksInputs = document.querySelectorAll('.screen input');  // находит в этом блоке все инпуты для обработки данных с них и навешивания на них "слушателя"
+const cmsCheckbox = document.getElementById('cms-open'); // находим див, в котором лежит чекбокс и лейбл чекбокса
+const hiddenCmsVariants = document.querySelector('.hidden-cms-variants');  // находим скрытый див с выбором кмски и стоимостью её внедрения
+const cmsSelect = document.getElementById('cms-select');  // находим селект с выбором cms
+const cmsOtherInput = document.getElementById('cms-other-input');  // находим инпут, который нужно показать при выборе "Другое"
 
 const appData = {
     screenSelect: false, // выбран тип экрана
@@ -31,10 +35,9 @@ const appData = {
     rollback: 0, // процент отката заказчику
     finalProfit: 0, // итоговый заработок ( = итоговая стоимость работ - откат)
 
-    toInt: function (str) { return Math.abs(parseInt(str.trim().split(/\D/).join(''))) },
+    toInt: function (str) { return Math.abs(parseInt(str.trim().split(/\D/).join(''))) }, // возвращает целое положительно число из строки
 
-    toDisplay: function (elems, value) {
-        value = value || "block";  // Если функцию вызвать только с одним аргументом, второй будет "block"
+    setDisplay: function (elems, value = 'none') {
         if (elems instanceof HTMLElement) {   // Если elems - один HTML-элемент
             elems.style.display = value;      // изменится свойство элемента и выполнение функции прервется из-за return.
             return;
@@ -42,7 +45,7 @@ const appData = {
         for (let i = 0; i < elems.length; i++) { // А можно передать список элементов и одним вызовом скрыть все.
             elems[i].style.display = value;
         };
-    },
+    }, // 
     toUncheck: function (elems) {
         if (elems instanceof HTMLElement) {   // Если elems - один HTML-элемент
             elems.querySelector('input[type=checkbox]').checked = false;   // изменится свойство элемента и выполнение функции прервется из-за return.
@@ -105,6 +108,23 @@ const appData = {
         this.addListenersToForms();
         buttonPlus.addEventListener('click', this.addScreenBlock);
         buttonStart.addEventListener('click', this.start);
+        console.log(cmsCheckbox);
+        cmsCheckbox.addEventListener('input', () => {
+            if (cmsCheckbox.checked) {
+                this.setDisplay(hiddenCmsVariants, 'flex');
+            } else {
+                this.setDisplay(hiddenCmsVariants);
+            };
+        });
+        cmsSelect.addEventListener('input', () => {
+            if ('other' === cmsSelect.value) {
+                this.setDisplay(cmsOtherInput.parentNode, 'flex');
+            } else {
+                this.setDisplay(cmsOtherInput.parentNode);
+            };
+        });
+
+
     },
     addTitle: function () { document.title = pageTitle.textContent },
     addScreenBlock: function () {
@@ -216,8 +236,8 @@ const appData = {
         this.enableAllInputs();
         this.toUncheck(otherItemsPercent);
         this.toUncheck(otherItemsNumber);
-        this.toDisplay(buttonReset, 'none');
-        this.toDisplay(buttonStart);
+        this.setDisplay(buttonReset);
+        this.setDisplay(buttonStart, 'block');
         this.screenArray.length = 0;
         this.servicePercentArray.length = 0;
         this.serviceNumberArray.length = 0;
@@ -240,8 +260,8 @@ const appData = {
             showFinalProfit.value = this.finalProfit;
         });
         this.enableAllInputs(false);
-        this.toDisplay(buttonStart, 'none');
-        this.toDisplay(buttonReset);
+        this.setDisplay(buttonStart);
+        this.setDisplay(buttonReset, 'block');
         buttonReset.addEventListener('click', () => { this.reset(); });
     },
     logger: function () { console.log(this) },
