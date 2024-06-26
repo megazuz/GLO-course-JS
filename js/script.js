@@ -31,6 +31,7 @@ const appData = {
     serviceNumberArray: [], // хранит перечень сервисов, цена которых фиксированная
     totalServicePercent: 0, // сумма всех дополнительных сервисов, цена которых выражается в процентах от общей стоимости
     totalServiceNumber: 0, //  сумма всех дополнительных сервисов с фиксированной ценой
+    cmsPercent: 0, // количество процентов, на которое возрастает стоимость всех работ в зависиомсти от CMS
     fullPrice: 0, // итоговая стоимость работ ( = сумме всех экранов + учёт процентных сервисов + сервисы с фиксированной ценой)
     rollback: 0, // процент отката заказчику
     finalProfit: 0, // итоговый заработок ( = итоговая стоимость работ - откат)
@@ -85,6 +86,8 @@ const appData = {
     isSelected: function () {
         let temp = true;
         screenBlocksSelects.forEach((item) => (item.value === undefined) ? temp = false : {});
+        (cmsCheckbox.checked && (cmsSelect.value === '')) ? temp = false : {};
+        (cmsCheckbox.checked && cmsSelect.value === 'other' && (!this.toInt(cmsOtherInput.value))) ? temp = false : {};
         this.screenSelect = temp;
         this.toEnableOne(buttonStart, this.screenSelect && this.screenInput);
     },
@@ -108,23 +111,26 @@ const appData = {
         this.addListenersToForms();
         buttonPlus.addEventListener('click', this.addScreenBlock);
         buttonStart.addEventListener('click', this.start);
-        console.log(cmsCheckbox);
         cmsCheckbox.addEventListener('input', () => {
             if (cmsCheckbox.checked) {
+                this.isSelected();
                 this.setDisplay(hiddenCmsVariants, 'flex');
+                cmsSelect.addEventListener('input', () => this.isSelected());
             } else {
                 this.setDisplay(hiddenCmsVariants);
+                cmsSelect.removeEventListener('input', () => this.isSelected());
             };
         });
         cmsSelect.addEventListener('input', () => {
             if ('other' === cmsSelect.value) {
+                this.isSelected();
                 this.setDisplay(cmsOtherInput.parentNode, 'flex');
+                cmsOtherInput.addEventListener('input', () => this.isSelected());
             } else {
                 this.setDisplay(cmsOtherInput.parentNode);
+                cmsOtherInput.removeEventListener('input', () => this.isSelected());
             };
         });
-
-
     },
     addTitle: function () { document.title = pageTitle.textContent },
     addScreenBlock: function () {
@@ -143,6 +149,7 @@ const appData = {
         appData.addServices();
         appData.getScreens();
         appData.getServices();
+        appData.getCMS();
         appData.getFullPrice();
         appData.getFinalProfit();
         // appData.logger();
@@ -206,8 +213,17 @@ const appData = {
         for (let j in this.serviceNumberArray) tempNumber += +this.serviceNumberArray[j].price;
         this.totalServiceNumber = tempNumber;
     },  // суммирует стоимость всех доп. услуг
+    getCMS: function () {
+        if (cmsCheckbox.checked) {
+            if (cmsSelect.value === 'other') {
+                this.cmsPercent = this.toInt(cmsOtherInput.value);
+            } else {
+                this.cmsPercent = this.toInt(cmsSelect.value);
+            };
+        };
+    }, // забирает со страницы количество процентов из селекта cms-select или из инпута cms-other-input
     getFullPrice: function () {
-        this.fullPrice = this.totalScreen + this.totalServicePercent + this.totalServiceNumber;
+        this.fullPrice = this.totalScreen + this.totalServicePercent + this.totalServiceNumber + this.cmsPercent * this.totalScreen / 100;
     },   // находит итоговую стоимость всего проекта, суммируя базовую цену и цену всех доп услуг.
     getFinalProfit: function () {
         this.finalProfit = Math.ceil(this.fullPrice - this.fullPrice * (this.rollback / 100));
@@ -223,11 +239,26 @@ const appData = {
         for (let i = screenBlocks.length - 1; i > 0; i--) {
             screenBlocks[i].remove();
         }
-        showTotalScreen.value = '';
-        showScreenCount.value = '';
-        showTotalService.value = '';
-        showFullPrice.value = '';
-        showFinalProfit.value = '';
+        this.screenCount = 0;
+        this.totalScreen = 0;
+        this.totalServicePercent = 0;
+        this.totalServiceNumber = 0;
+        this.cmsPercent = 0;
+        this.fullPrice = 0;
+        this.rollback = 0;
+        this.finalProfit = 0;
+        cmsSelect.value = '';
+        cmsOtherInput.value = '';
+        cmsCheckbox.checked = false;
+        this.setDisplay(hiddenCmsVariants);
+        cmsSelect.removeEventListener('input', () => this.isSelected());
+        this.setDisplay(cmsOtherInput.parentNode);
+        cmsOtherInput.removeEventListener('input', () => this.isSelected());
+        showTotalScreen.value = 0;
+        showScreenCount.value = 0;
+        showTotalService.value = 0;
+        showFullPrice.value = 0;
+        showFinalProfit.value = 0;
         this.toClearValue(screenBlocksSelects);
         this.toClearValue(screenBlocksInputs);
         this.toClearValue(otherItemsPercent);
